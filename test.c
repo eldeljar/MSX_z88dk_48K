@@ -7,7 +7,7 @@
 - BSS (uninitialised static/global variables) into RAM at 0xc000
 */
 
-static int data_str = 1;
+static int data_int = 1;
 static int bss_int = 2;
 static const int rodata_int = 3;
 
@@ -40,26 +40,20 @@ void main(void) {
 
     changeBIOStoPage0();
 
-    if (data_str != 1) {
-		msx_color(INK_WHITE, INK_MEDIUM_GREEN, INK_BLACK);
-    } else {
-	    if (bss_int != 2) {
-			msx_color(INK_WHITE, INK_DARK_BLUE, INK_BLACK);
-	    } else {
-		    if (rodata_int != 3) {
-				msx_color(INK_WHITE, INK_CYAN, INK_BLACK);
-		    } else {
-			    if (rodata_int2 != 4) {
-					msx_color(INK_WHITE, INK_LIGHT_RED, INK_BLACK);
-			    } else {
-					msx_color(INK_WHITE, INK_MAGENTA, INK_BLACK);
-			    }
-		    }
-	    }
-    }
+    data_int = rodata_int;
+    bss_int = rodata_int2;
 
     changePage0toBIOS();
 
+    if (data_int != 3) {
+		msx_color(INK_WHITE, INK_MEDIUM_GREEN, INK_BLACK);
+    } else {
+	    if (bss_int != 4) {
+			msx_color(INK_WHITE, INK_DARK_BLUE, INK_BLACK);
+	    } else {
+			msx_color(INK_WHITE, INK_MAGENTA, INK_BLACK);
+	    }
+    }
       
     while(1) {  } 
 }
