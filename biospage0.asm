@@ -1,3 +1,7 @@
+; Código migrado a partir de la guia realizada por Ramones y que se puede encontrar en el siguiente enlace: 
+; http://www.msxblog.es/tutorial-ensamblador-i-como-crear-una-rom-de-48k/
+
+
 SECTION code_user
 
 PUBLIC search_slotset
@@ -6,76 +10,14 @@ PUBLIC recbios
 
 ; *** CONSTANTES ***
 
-DEFC NEWKEY					=		0FBE5h
-DEFC CHGMOD					=		05Fh
-
-DEFC PTRFLG					=		0F416h
-DEFC PTRFIL					=		0F864h
-DEFC OUTDO					=		18h
-DEFC FORCLR					=		0F3E9h
-DEFC BAKCLR					=		0F3EAh
-DEFC BDRCLR					=		0F3EBh
-DEFC LINL40					=		0F3AEh
-DEFC CLIKSW					=		0F3DBh
-DEFC CSRY					=		0F3DCh
-DEFC CSRX					=		0F3DDh
-
 DEFC ENASLT                 =     024h
-
 
 DEFC EXPTBL                 =     0FCC1h
 DEFC SLTTBL                 =     0FCC5h
-DEFC RDSLT                  =     000Ch
-DEFC RGSAV                  =     0F3DFh
-
-DEFC KEYROWS				=		11
-
 
 ;  *** VARIABLES ***
 
-keys: DEFW 						0E000h								; Tecla actual
-keysold: DEFW 					keys			+ KEYROWS			; Para tecla old
-keytrigger: DEFW 				keysold			+ KEYROWS
-keynotrigger: DEFW 				keytrigger		+ 1
-keybutton1: DEFW 				keynotrigger	+ 1
-keybutton2: DEFW 				keybutton1		+ 1
-
-slotvar: DEFW                      keybutton2      + 1
-slotram: DEFW                      slotvar         + 1
-
-vdp_reg98: DEFW                    slotram         + 1
-vdp_reg99: DEFW                    vdp_reg98       + 1
-vdp_reg9A: DEFW                    vdp_reg99       + 1
-vdp_reg9B: DEFW                    vdp_reg9A       + 1
-
-vdp_reg98r: DEFW                   vdp_reg9B       + 1
-vdp_reg99r: DEFW                   vdp_reg98r      + 1
-vdp_reg9Ar: DEFW                   vdp_reg99r      + 1
-vdp_reg9Br: DEFW                   vdp_reg9Ar      + 1
-
-; *** LOADSCREEN *** 
-
-; Esta rutina hace uso de la pagina baja de 48k
-; Posiciona la misma
-; Manda a la VRAM los datos
-; Y vuelve a dejar la BIOS
-
-;loadscreen:
-;
-;                        di                               ; Muy importante 
-;                        call    setrompage0              ; Posicionamos la pagina de 16k bajos de nuestro rom en la zona 0-3FFFh
-;
-;
-;
-;                        ld      hl,DATA_VRAM
-;                        ld      de,0
-;                        ld      bc,04000h
-;                        call    fillvram                ; Mandamos los 16k de Vram
-;
-;
-;
-;                        call    recbios                 ; Recuperamos la bios
-;                        ret
+DEFC slotvar = $E000
 
 ; -----------------------
 ; SEARCH_SLOTSET
@@ -87,7 +29,8 @@ search_slotset:
 				        call	search_slot
 				        ld		(slotvar),a
 				
-       				jp		ENASLT
+        				jp		ENASLT
+
 
 ; -----------------------
 ; SEARCH_SLOT
@@ -97,7 +40,6 @@ search_slotset:
 ; -----------------------
 
 search_slot:
-				
 				        call	0138h
 				        rrca
 				        rrca
@@ -122,44 +64,6 @@ search_slot0:
 				        ld		h,080h
 				        ret
 
-
-; ---------------------
-; SEARCH_SLOTRAM
-; Busca el slot de la ram
-; Y almacena
-; ----------------------				
-				
-search_slotram:
-				        call	0138h
-				        rlca
-				        rlca
-				        and		3
-				        ld		c,a
-				        ld		b,0
-				        ld		hl,0FCC1h
-				        add		hl,bc
-				        ld		a,(hl)
-				        and		080h
-				        jr		z,search_slotram0
-				        or		c
-				        ld		c,a
-				        inc		hl
-				        inc		hl
-				        inc		hl
-				        inc		hl
-				        ld		a,(hl)
-				        rlca
-				        rlca
-				        rlca
-				        rlca
-				        and		0Ch
-search_slotram0:
-				        or		c
-				        ld		(slotram),a
-    				
-	        			ret
-			
-			
 ; ------------------------------
 ; SETROMPAGE0			
 ; Posiciona nuestro cartucho en 
@@ -169,8 +73,8 @@ search_slotram0:
 setrompage0:	
 
 				
-        				ld		a,(slotvar)		
-				        jr		setslotpage0	
+        				ld		a,(slotvar)		; Leemos el slot del juego	
+				        jp		setslotpage0	; Situamos la pagina 0 del juego y volvemos
 				
 			
 			
@@ -249,9 +153,9 @@ setslotpage0:
                     ld      de,SLTTBL    
                     add     a,e
                     ld      e,a
-                    jr      nc,nocarry
+                    jr      nc,nocarryxx
                     inc     d
-nocarry:
+nocarryxx:
                     ld      a,c
                     ld      (de),a
 
@@ -259,92 +163,3 @@ nocarry:
 
                     
 setslotpage0_end:
-
-
-; *** VRAM *** 
-
-
-
-; -------------------
-; INITVRAM
-; Inicializa la VRAM
-;  HL : Puntero
-; A = 1 Escritura
-; A = 0 Lectura
-; -------------------
-
-initvram:	
-				or		a
-				jp		z,initvramrd
-initvramwr:		
-				di				
-				ld		a,(vdp_reg99)
-				ld		c,a							
-				out		(c),l
-				set		6,h
-				nop
-				out		(c),h
-				ret
-				
-initvramrd:
-				di
-				ld		a,(vdp_reg99)
-				ld		c,a							
-				out		(c),l
-				res		6,h
-				nop
-				out		(c),h
-				ret
-
-
-; -------------------
-; FILLVRAM
-; HL :	 Origen datos
-; DE :	 Destino Vram
-; BC :	 Datos
-; A: Page 
-; -------------------
-
-
-fillvram:	
-
-	
-				ex		de,hl
-				push	de
-				push	bc
-				call	initvramwr	
-				pop		bc
-				pop		hl
-
-fillvram_10:	
-				ld		a,c				
-				or		a
-				ld		d,a
-				
-				ld		a,(vdp_reg98)			
-				ld		c,a
-				ld		a,b
-				
-				
-				jp		z,fillvram_11
-
-				
-				ld		b,d
-fillvram_10l:	
-				outi				
-				jp		nz,fillvram_10l
-				or		a
-				ret		z
-     	
-				
-fillvram_11:	
-	
-fillvram_12:	
-				ld		b,0
-fillvram_12l:
-				outi
-				
-				jp		nz,fillvram_12l
-				dec		a
-				jp		nz,fillvram_12
-				ret

@@ -1,0 +1,4 @@
+SECTION page3
+org     $E000
+
+DEFC SLOTGAME = 0
